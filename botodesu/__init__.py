@@ -21,8 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Optional, Dict, Any, Union, Dict, List, AsyncIterator, \
-    AnyStr
+from typing import Optional, Any, List
 
 from . import _version
 from ._version import *
@@ -43,8 +42,6 @@ import aiohttp  # type: ignore
 import re
 import json
 import functools
-import threading
-import mimetypes
 import warnings
 import random
 
@@ -54,8 +51,6 @@ __all__ = ["Boto"] + \
 _DEFAULT_BASE_URL = "https://api.telegram.org/bot{token}/{method}"
 
 _USER_AGENT = "aiohttp/{} botodesu/{}".format(aiohttp.__version__, version)
-
-_GLOBAL_LOCK = threading.Lock()
 
 
 class Boto:
