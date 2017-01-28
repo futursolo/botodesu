@@ -27,6 +27,17 @@ from typing import Optional, Dict, Any, Union, Dict, List, AsyncIterator, \
 from . import _version
 from ._version import *
 
+from . import dikuto
+from .dikuto import *
+
+from . import exceptions
+from .exceptions import *
+
+from . import methods
+
+from . import body
+from .body import *
+
 import asyncio
 import aiohttp  # type: ignore
 import re
@@ -37,103 +48,14 @@ import mimetypes
 import warnings
 import random
 
-__all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFairu", "Boto"] + \
-    _version.__all__
+__all__ = ["Boto"] + \
+    _version.__all__ + dikuto.__all__ + exceptions.__all__ + body.__all__
 
 _DEFAULT_BASE_URL = "https://api.telegram.org/bot{token}/{method}"
 
-_ALLOWED_NAME = re.compile(r"^[a-z]([a-z\_]+)?$")
-
 _USER_AGENT = "aiohttp/{} botodesu/{}".format(aiohttp.__version__, version)
 
-
-class BotoDikuto(Dict[str, Any]):
-    def __getitem__(self, name_or_index: str) -> Any:
-        try:
-            value = dict.__getitem__(self, name_or_index)
-
-        except KeyError as e:
-            if name_or_index == "_from":
-                value = self["from"]
-
-            else:
-                raise
-
-        return value
-
-    def __getattr__(self, name_or_index: str) -> Any:
-            try:
-                return self[name_or_index]
-
-            except KeyError as e:
-                raise AttributeError from e
-
-
-class BotoEra(Exception):
-    def __init__(
-        self, *args: Any, status_code: Optional[int]=None,
-        content: Optional[Union[Dict[str, Any], List[Any], AnyStr]]=None,
-            **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
-        self.status_code = status_code
-        self.content = content
-
-
-class BotoWarning(Warning):
-    pass
-
-
 _GLOBAL_LOCK = threading.Lock()
-
-
-class _BotoMethods(Dict[str, str]):
-    def __getitem__(self, name: str) -> str:
-        if name not in self.keys():
-            with _GLOBAL_LOCK:
-                if re.fullmatch(_ALLOWED_NAME, name) is None:
-                    raise BotoEra(
-                        ("Unacceptable API Method Name: {}, "
-                         "r\"^[a-z]([a-z\_]+)?$\" is expected.").format(name))
-
-                self[name] = name.strip().replace("_", "")
-
-        return dict.__getitem__(self, name)
-
-
-_BOTO_METHODS = _BotoMethods()
-
-
-class BotoFairu:
-    def __init__(self, filename: str, content: bytes) -> None:
-        self._filename = filename
-        self._content = content
-
-        self._content_type = mimetypes.guess_type(self._filename)[0]
-        self._content_transfer_encoding = "binary"
-
-    def set_content_type(self, content_type: str) -> None:
-        self._content_type = content_type
-
-    def set_content_transfer_encoding(self, new_cte: str) -> None:
-        self._content_transfer_encoding = new_cte
-
-
-def _generate_form_data(**kwargs: Union[str, BotoFairu]) -> aiohttp.FormData:
-    form_fata = aiohttp.FormData()
-
-    for name, value in kwargs.items():
-        if isinstance(value, BotoFairu):
-            form_fata.add_field(
-                name, value._content,
-                content_type=value._content_type,
-                filename=value._filename,
-                content_transfer_encoding=value._content_transfer_encoding)
-
-        else:
-            form_fata.add_field(name, value)
-
-    return form_fata
 
 
 class Boto:
@@ -152,7 +74,7 @@ class Boto:
 
     def _make_request_url(self, method_name: str) -> str:
         return self._base_url.format(
-            token=self._token, method=_BOTO_METHODS[method_name])
+            token=self._token, method=methods.get_url_name(method_name))
 
     async def _send_anything(
             self, __method_name: str, **kwargs: Any) -> Any:
@@ -161,12 +83,9 @@ class Boto:
         # Telegram will cut off requests longer than 60 seconds,
         # but it's better to wait the server close the connection first.
         headers = {"User-Agent": _USER_AGENT}
-        try:
-            data = json.dumps(kwargs)
-            headers["Content-Type"] = "application/json"
+        body_headers, data = body.generate(**kwargs)
 
-        except:  # Fallback to Form Data.
-            data = _generate_form_data(**kwargs)
+        headers.update(body_headers)
 
         async with self._client.post(
                 url, headers=headers, data=data, timeout=61) as response:
