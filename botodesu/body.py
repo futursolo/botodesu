@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Union, Any, Tuple, AnyStr
+from typing import Union, Any, Tuple, AnyStr, Dict
 
 import aiohttp  # type: ignore
 import mimetypes

@@ -84,12 +84,6 @@ class Boto:
 
         async with self._client.post(
                 url, headers=headers, data=data, timeout=61) as response:
-            if response.content_type.find("json") != -1:
-                raise BotoEra(
-                    "Era occurred when talking with the server.",
-                    status_code=response.status,
-                    content=(await response.read()))
-
             content_text = await response.text()
             content = json.loads(
                 content_text, object_pairs_hook=BotoDikuto)
