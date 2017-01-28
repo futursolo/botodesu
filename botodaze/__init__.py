@@ -35,7 +35,7 @@ import threading
 import mimetypes
 import multidict  # type: ignore
 
-__all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFile", "Botodaze"] + \
+__all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFairu", "Botodaze"] + \
     _version.__all__
 
 _DEFAULT_BASE_URL = "https://api.telegram.org/bot{token}/{method}"
@@ -45,12 +45,26 @@ _ALLOWED_NAME = re.compile(r"^[a-z]([a-z\_]+)?$")
 _USER_AGENT = "aiohttp/{} botodaze/{}".format(aiohttp.__version__, version)
 
 
-class BotoDikuto(dict):
-    pass
+class BotoDikuto(Dict[str, Any]):
+    def __getitem__(self, name_or_index: str) -> Any:
+        try:
+            value = dict.__getitem__(self, name_or_index)
 
+        except KeyError as e:
+            if name_or_index == "_from":
+                value = self["from"]
 
-class BotoLisuto(list):
-    pass
+            else:
+                raise
+
+        return value
+
+    def __getattr__(self, name_or_index: str) -> Any:
+            try:
+                return self[name_or_index]
+
+            except KeyError as e:
+                raise AttributeError from e
 
 
 class BotoEra(Exception):
@@ -81,7 +95,7 @@ class _BotoMethods(Dict[str, str]):
         return dict.__getitem__(self, name)
 
 
-class BotoFile:
+class BotoFairu:
     def __init__(self, filename: str, content: bytes) -> None:
         self._filename = filename
         self._content = content
@@ -96,11 +110,11 @@ class BotoFile:
         self._content_transfer_encoding = new_cte
 
 
-def _generate_form_data(**kwargs: Union[str, BotoFile]) -> aiohttp.FormData:
+def _generate_form_data(**kwargs: Union[str, BotoFairu]) -> aiohttp.FormData:
     form_fata = aiohttp.FormData()
 
     for name, value in kwargs.items():
-        if isinstance(value, BotoFile):
+        if isinstance(value, BotoFairu):
             form_fata.add_field(
                 name, value._content,
                 content_type=value._content_type,
@@ -135,7 +149,10 @@ class Botodaze:
             token=self._token, method=self._api_methods[method_name])
 
     async def _send_anything(
-            self, __method_name: str, **kwargs: Union[str, BotoFile]) -> Any:
+            self, __method_name: str, **kwargs: Union[str, BotoFairu]) -> Any:
+        for key in kwargs.keys():
+            kwargs[key] = str(kwargs[key])
+
         url = self._make_request_url(__method_name)
 
         # Telegram will cut off requests longer than 60 seconds,
@@ -149,13 +166,9 @@ class Botodaze:
                     status_code=response.status,
                     content=(await response.read()))
 
-            content = await response.json()
-
-            if isinstance(content, dict):
-                content = BotoDikuto(content)
-
-            elif isinstance(content, list):
-                content = BotoLisuto(content)
+            content_text = await response.text()
+            content = json.loads(
+                content_text, object_pairs_hook=BotoDikuto)
 
             if response.status != 200:
                 raise BotoEra(
@@ -178,9 +191,9 @@ class Botodaze:
         return functools.partial(self._send_anything, name)
 
     async def get_updates(
-        self, offset: Optional[Union[int, str]]=None,
-        limit: Union[int, str]=10,
-            timeout: Union[int, str]=45) -> List[Dict[str, Any]]:
+        self, offset: Optional[int]=None,
+        limit: Optional[int]=10, timeout: Optional[int]=45
+            ) -> List[Dict[str, Any]]:
         get_updates_fn = self.__getattr__("get_updates")
 
         if offset is None:
@@ -190,16 +203,22 @@ class Botodaze:
             self._update_offset = int(offset)
 
         updates = await get_updates_fn(
-            offset=str(offset), limit=str(limit), timeout=str(timeout))
+            offset=offset, limit=limit, timeout=timeout)
 
         if len(updates) > 0:
             self._update_offset = updates[-1].update_id + 1
 
         return updates
 
+    async def __aenter__(self) -> "Botodaze":
+        raise NotImplementedError
+
+    async def aiter_updates(self):
+        raise NotImplementedError
+
     async def close(self) -> None:
         raise NotImplementedError
 
     def __del__(self) -> None:
         if self._client is not None:
-            pass  # Log Error.
+            raise NotImplementedError  # Log Error.
