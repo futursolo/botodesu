@@ -21,7 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Optional, Dict, Any, Union, Dict, List, AsyncIterator
+from typing import Optional, Dict, Any, Union, Dict, List, AsyncIterator, \
+    AnyStr
 
 from . import _version
 from ._version import *
@@ -34,6 +35,7 @@ import functools
 import threading
 import mimetypes
 import warnings
+import random
 
 __all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFairu", "Boto"] + \
     _version.__all__
@@ -70,7 +72,7 @@ class BotoDikuto(Dict[str, Any]):
 class BotoEra(Exception):
     def __init__(
         self, *args: Any, status_code: Optional[int]=None,
-        content: Optional[Union[dict, list, str, bytes]]=None,
+        content: Optional[Union[Dict[str, Any], List[Any], AnyStr]]=None,
             **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
@@ -97,6 +99,9 @@ class _BotoMethods(Dict[str, str]):
                 self[name] = name.strip().replace("_", "")
 
         return dict.__getitem__(self, name)
+
+
+_BOTO_METHODS = _BotoMethods()
 
 
 class BotoFairu:
@@ -131,17 +136,6 @@ def _generate_form_data(**kwargs: Union[str, BotoFairu]) -> aiohttp.FormData:
     return form_fata
 
 
-class _AsyncBotoUpdateInterator(AsyncIterator[BotoDikuto]):
-    def __init__(self, boto: "Boto") -> None:
-        self._boto = boto
-
-    def __aiter__(self) -> "_AsyncBotoUpdateInterator":
-        return self
-
-    def __anext__(self) -> BotoDikuto:
-        raise NotImplementedError
-
-
 class Boto:
     """
     Bo-to Desu!
@@ -154,27 +148,28 @@ class Boto:
         self._token = token
         self._base_url = base_url
 
-        self._api_methods = _BotoMethods()
-        self._update_offset = 0
-
         self._client = aiohttp.ClientSession(loop=self._loop)
 
     def _make_request_url(self, method_name: str) -> str:
         return self._base_url.format(
-            token=self._token, method=self._api_methods[method_name])
+            token=self._token, method=_BOTO_METHODS[method_name])
 
     async def _send_anything(
-            self, __method_name: str, **kwargs: Union[str, BotoFairu]) -> Any:
-        for key in kwargs.keys():
-            kwargs[key] = str(kwargs[key])
-
+            self, __method_name: str, **kwargs: Any) -> Any:
         url = self._make_request_url(__method_name)
 
         # Telegram will cut off requests longer than 60 seconds,
         # but it's better to wait the server close the connection first.
+        headers = {"User-Agent": _USER_AGENT}
+        try:
+            data = json.dumps(kwargs)
+            headers["Content-Type"] = "application/json"
+
+        except:  # Fallback to Form Data.
+            data = _generate_form_data(**kwargs)
+
         async with self._client.post(
-            url, headers={"User-Agent": _USER_AGENT},
-                data=_generate_form_data(**kwargs), timeout=61) as response:
+                url, headers=headers, data=data, timeout=61) as response:
             if response.content_type.find("json") != -1:
                 raise BotoEra(
                     "Era occurred when talking with the server.",
@@ -205,36 +200,56 @@ class Boto:
     def __getattr__(self, name: str) -> Any:
         return functools.partial(self._send_anything, name)
 
-    async def get_updates(
-        self, offset: Optional[int]=None,
-        limit: Optional[int]=10, timeout: Optional[int]=45
-            ) -> List[Dict[str, Any]]:
-        get_updates_fn = self.__getattr__("get_updates")
-
-        if offset is None:
-            offset = self._update_offset
-
-        else:
-            self._update_offset = int(offset)
-
-        updates = await get_updates_fn(
-            offset=offset, limit=limit, timeout=timeout)
-
-        if len(updates) > 0:
-            self._update_offset = updates[-1].update_id + 1
-
-        return updates
-
     async def __aenter__(self) -> "Boto":
         return self
 
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
-        await self.close()
+        await self._close()
 
-    def __aiter__(self) -> AsyncIterator[BotoDikuto]:
-        return _AsyncBotoUpdateInterator(self)
+    async def __aiter__(self) -> Any:
+        try:
+            err_times = 0
+            update_offset = 0
 
-    async def close(self) -> None:
+            while True:
+                try:
+                    updates = await self.get_updates(
+                        limit=1, offset=update_offset, timeout=55)
+
+                    if not updates:
+                        continue
+
+                    update = updates[0]
+                    update_offset = update.update_id + 1
+
+                    yield update
+
+                except:
+                    await asyncio.sleep((random.random() * 5 + 5))
+                    # Wait a peroid (between 5 and 10 sec) of time
+                    # before retrying.
+
+                    err_times += 1
+
+                    # If get_updates continuously errored more than 100 times,
+                    # raise the error. This gives your boto redundancy
+                    # to bad network environments.
+                    if err_times >= 100:
+                        err_times = 0
+                        raise
+
+                else:
+                    err_times = 0
+
+        finally:
+            try:  # Flush out the processed offset with a short poll.
+                await self.get_updates(
+                    limit=0, offset=update_offset, timeout=0)
+
+            except:
+                pass
+
+    async def _close(self) -> None:
         await self._client.close()
         self._client = None
 
@@ -242,6 +257,6 @@ class Boto:
         if self._client is not None:
             warnings.warn(
                 "Boto is not properly closed. "
-                "Call `Boto.close()` or wrap it under an "
+                "Await `Boto._close()` or wrap it under an "
                 "`async with` statement before it's been garbage collected.",
                 BotoWarning)
