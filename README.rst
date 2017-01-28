@@ -6,7 +6,7 @@ Example
 -------
 An Echo Bot:
 
-.. code-block: python3
+.. code-block:: python3
   async with botodesu.Boto("YOUR_API_KEY") as boto:
       async for update in boto:
           if "message" not in update.keys():
@@ -31,7 +31,7 @@ Prerequisites
 
 Try it out!
 -----------
-.. code-block: python3
+.. code-block:: python3
   $ pip install git+https://github.com/futursolo/botodesu.git
 
 License
