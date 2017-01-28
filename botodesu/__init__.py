@@ -35,14 +35,14 @@ import threading
 import mimetypes
 import multidict  # type: ignore
 
-__all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFairu", "Botodaze"] + \
+__all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFairu", "BotoDesu"] + \
     _version.__all__
 
 _DEFAULT_BASE_URL = "https://api.telegram.org/bot{token}/{method}"
 
 _ALLOWED_NAME = re.compile(r"^[a-z]([a-z\_]+)?$")
 
-_USER_AGENT = "aiohttp/{} botodaze/{}".format(aiohttp.__version__, version)
+_USER_AGENT = "aiohttp/{} botodesu/{}".format(aiohttp.__version__, version)
 
 
 class BotoDikuto(Dict[str, Any]):
@@ -127,9 +127,9 @@ def _generate_form_data(**kwargs: Union[str, BotoFairu]) -> aiohttp.FormData:
     return form_fata
 
 
-class Botodaze:
+class BotoDesu:
     """
-    Boto daze!
+    Bo-to Desu!
     """
     def __init__(
         self, token: str, *, base_url: str=_DEFAULT_BASE_URL,
@@ -210,7 +210,16 @@ class Botodaze:
 
         return updates
 
-    async def __aenter__(self) -> "Botodaze":
+    async def __aenter__(self) -> "BotoDesu":
+        return self
+
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError
+
+    def __aiter__(self) -> "BotoDesu":
+        return self
+
+    async def __anext__(self) -> Any:
         raise NotImplementedError
 
     async def aiter_updates(self):
