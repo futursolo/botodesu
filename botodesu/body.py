@@ -45,7 +45,7 @@ class BotoFairu:
         self._content_transfer_encoding = new_cte
 
 
-def _generate_form_data(**kwargs: Union[str, BotoFairu]) -> aiohttp.FormData:
+def _generate_form_data(**kwargs: Union[Any, BotoFairu]) -> aiohttp.FormData:
     form_fata = aiohttp.FormData()
 
     for name, value in kwargs.items():
@@ -57,7 +57,8 @@ def _generate_form_data(**kwargs: Union[str, BotoFairu]) -> aiohttp.FormData:
                 content_transfer_encoding=value._content_transfer_encoding)
 
         else:
-            form_fata.add_field(name, value)
+
+            form_fata.add_field(name, str(value))
 
     return form_fata
 
