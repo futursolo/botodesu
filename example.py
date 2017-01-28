@@ -22,6 +22,7 @@
 # SOFTWARE.
 
 import botodesu
+import asyncio
 
 
 async def hello() -> None:
@@ -41,3 +42,7 @@ async def hello() -> None:
                 chat_id=message.chat.id,
                 text="You said: \"{}\".".format(text),
                 reply_to_message_id=message.message_id)
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(hello())
