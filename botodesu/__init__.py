@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Optional, Dict, Any, Union, Dict, List
+from typing import Optional, Dict, Any, Union, Dict, List, AsyncIterator
 
 from . import _version
 from ._version import *
@@ -33,9 +33,9 @@ import json
 import functools
 import threading
 import mimetypes
-import multidict  # type: ignore
+import warnings
 
-__all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFairu", "BotoDesu"] + \
+__all__ = ["BotoDikuto", "BotoLisuto", "BotoEra", "BotoFairu", "Boto"] + \
     _version.__all__
 
 _DEFAULT_BASE_URL = "https://api.telegram.org/bot{token}/{method}"
@@ -76,6 +76,10 @@ class BotoEra(Exception):
 
         self.status_code = status_code
         self.content = content
+
+
+class BotoWarning(Warning):
+    pass
 
 
 _GLOBAL_LOCK = threading.Lock()
@@ -127,7 +131,18 @@ def _generate_form_data(**kwargs: Union[str, BotoFairu]) -> aiohttp.FormData:
     return form_fata
 
 
-class BotoDesu:
+class _AsyncBotoUpdateInterator(AsyncIterator[BotoDikuto]):
+    def __init__(self, boto: "Boto") -> None:
+        self._boto = boto
+
+    def __aiter__(self) -> "_AsyncBotoUpdateInterator":
+        return self
+
+    def __anext__(self) -> BotoDikuto:
+        raise NotImplementedError
+
+
+class Boto:
     """
     Bo-to Desu!
     """
@@ -210,24 +225,23 @@ class BotoDesu:
 
         return updates
 
-    async def __aenter__(self) -> "BotoDesu":
+    async def __aenter__(self) -> "Boto":
         return self
 
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
-        raise NotImplementedError
+        await self.close()
 
-    def __aiter__(self) -> "BotoDesu":
-        return self
-
-    async def __anext__(self) -> Any:
-        raise NotImplementedError
-
-    async def aiter_updates(self):
-        raise NotImplementedError
+    def __aiter__(self) -> AsyncIterator[BotoDikuto]:
+        return _AsyncBotoUpdateInterator(self)
 
     async def close(self) -> None:
-        raise NotImplementedError
+        await self._client.close()
+        self._client = None
 
     def __del__(self) -> None:
         if self._client is not None:
-            raise NotImplementedError  # Log Error.
+            warnings.warn(
+                "Boto is not properly closed. "
+                "Call `Boto.close()` or wrap it under an "
+                "`async with` statement before it's been garbage collected.",
+                BotoWarning)
