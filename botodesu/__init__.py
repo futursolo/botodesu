@@ -128,44 +128,45 @@ class Boto:
     async def __aiter__(self) -> Any:
         try:
             err_times = 0
+            pending_updates: List[dikuto.BotoDikuto] = []
             update_offset = 0
 
             while True:
-                try:
-                    updates = await self.get_updates(
-                        limit=1, offset=update_offset, timeout=55)
+                while (not pending_updates):
+                    try:
+                        updates = await self.get_updates(
+                            limit=10, offset=update_offset, timeout=55)
 
-                    if not updates:
-                        continue
+                        pending_updates.extend(updates)
 
-                    update = updates[0]
-                    update_offset = update.update_id + 1
+                    except:
+                        await asyncio.sleep((random.random() * 5 + 5))
+                        # Wait a peroid (between 5 and 10 sec) of time
+                        # before retrying.
 
-                    yield update
+                        err_times += 1
 
-                except:
-                    await asyncio.sleep((random.random() * 5 + 5))
-                    # Wait a peroid (between 5 and 10 sec) of time
-                    # before retrying.
+                        # If get_updates continuously errored more than 100
+                        # times, raise the error. This gives your `boto`
+                        # redundancy to bad network environments.
+                        if err_times >= 100:
+                            err_times = 0
+                            raise
 
-                    err_times += 1
-
-                    # If get_updates continuously errored more than 100 times,
-                    # raise the error. This gives your boto redundancy
-                    # to bad network environments.
-                    if err_times >= 100:
+                    else:
                         err_times = 0
-                        raise
 
-                else:
-                    err_times = 0
+                update = pending_updates.pop(0)
+                update_offset = update.update_id + 1
+
+                yield update
 
         finally:
             try:  # Flush out the processed offset with a short poll.
                 await self.get_updates(
                     limit=0, offset=update_offset, timeout=0)
 
-            except:
+            except:  # Failed to short poll.
                 pass
 
     async def _close(self) -> None:
