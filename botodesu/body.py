@@ -56,9 +56,14 @@ def _generate_form_data(**kwargs: Union[Any, BotoFairu]) -> aiohttp.FormData:
                 filename=value._filename,
                 content_transfer_encoding=value._content_transfer_encoding)
 
-        else:
+        elif isinstance(value, (list, dict)):
+            form_fata.add_field(name, json.dumps(value))
 
+        elif isinstance(value, (int, float, str, bool)):
             form_fata.add_field(name, str(value))
+
+        else:
+            raise TypeError("Unknown Type: {}".format(type(value)))
 
     return form_fata
 
