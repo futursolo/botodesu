@@ -44,6 +44,7 @@ import json
 import functools
 import warnings
 import random
+import traceback
 
 __all__ = ["Boto"] + \
     _version.__all__ + dikuto.__all__ + exceptions.__all__ + body.__all__
@@ -67,12 +68,18 @@ class Boto:
 
         self._client = aiohttp.ClientSession(loop=self._loop)
 
+        self._err_times = 0
+        self._pending_updates = []  # type: List[dikuto.BotoDikuto]
+        self._update_offset = 0
+
     def _make_request_url(self, method_name: str) -> str:
         return self._base_url.format(
             token=self._token, method=methods.get_url_name(method_name))
 
     async def _send_anything(
             self, __method_name: str, **kwargs: Any) -> Any:
+        assert self._client is not None, "Boto is closed!"
+
         url = self._make_request_url(__method_name)
 
         # Telegram will cut off requests longer than 60 seconds,
@@ -114,51 +121,59 @@ class Boto:
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self._close()
 
-    async def __aiter__(self) -> Any:
-        try:
-            err_times = 0
-            pending_updates: List[dikuto.BotoDikuto] = []
-            update_offset = 0
+    async def __aiter__(self) -> "Boto":
+        return self
 
-            while True:
-                while (not pending_updates):
-                    try:
-                        updates = await self.get_updates(
-                            limit=10, offset=update_offset, timeout=55)
+    async def __anext__(self) -> dikuto.BotoDikuto:
+        while (not self._pending_updates):
+            try:
+                updates = await self.get_updates(
+                    limit=(random.random() * 40 + 10),
+                    offset=self._update_offset,
+                    timeout=55)
+                # Fetch multiple updates(between 10 and 50) requests
+                # at the same time.
 
-                        pending_updates.extend(updates)
+                self._pending_updates.extend(updates)
 
-                    except:
-                        await asyncio.sleep((random.random() * 5 + 5))
-                        # Wait a peroid (between 5 and 10 sec) of time
-                        # before retrying.
+            except:
+                await asyncio.sleep((random.random() * 5 + 5))
+                # Wait a peroid (between 5 and 10 sec) of time
+                # before retrying.
 
-                        err_times += 1
+                self._err_times += 1
 
-                        # If get_updates continuously errored more than 100
-                        # times, raise the error. This gives your `boto`
-                        # redundancy to bad network environments.
-                        if err_times >= 100:
-                            err_times = 0
-                            raise
+                # If get_updates continuously errored more than 100
+                # times, raise the error. This gives your `boto`
+                # redundancy to bad network environments.
+                if self._err_times >= 100:
+                    self._err_times = 0
+                    raise
 
-                    else:
-                        err_times = 0
+            else:
+                self._err_times = 0
 
-                update = pending_updates.pop(0)
-                update_offset = update.update_id + 1
+        update = self._pending_updates.pop(0)
+        self._update_offset = update.update_id + 1
 
-                yield update
-
-        finally:
-            try:  # Flush out the processed offset with a short poll.
-                await self.get_updates(
-                    limit=0, offset=update_offset, timeout=0)
-
-            except:  # Failed to short poll.
-                pass
+        return update
 
     async def _close(self) -> None:
+        if self._update_offset != 0:
+            try:  # Flush out the processed offset with a short poll.
+                await self.get_updates(
+                    limit=0,
+                    offset=self._update_offset,
+                    timeout=0)
+
+            except:  # Failed to short poll.
+                warnings.warn(
+                    ("Boto cannot upload the offset to the telegram server,"
+                     "the same update may be processed twice "
+                     "on the next start, the actual offset is {}.\n{}").format(
+                        self._update_offset, traceback.format_exc()),
+                    BotoWarning)
+
         await self._client.close()
         self._client = None
 

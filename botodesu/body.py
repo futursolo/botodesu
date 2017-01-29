@@ -65,7 +65,7 @@ def _generate_form_data(**kwargs: Union[Any, BotoFairu]) -> aiohttp.FormData:
 
 def generate(**kwargs: Any) -> Tuple[
         Dict[str, str], Union[AnyStr, aiohttp.FormData]]:
-    headers: Dict[str, str] = {}
+    headers = {}  # type: Dict[str, str]
     try:
         data = json.dumps(kwargs)
         headers["Content-Type"] = "application/json"

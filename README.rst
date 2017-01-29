@@ -27,7 +27,7 @@ An Echo Bot:
 
 Prerequisites
 -------------
-- `python_version>=3.6.0`
+- `python_version>=3.5.2`
 - `aiohttp>=1.2.0`
 
 Try it out!

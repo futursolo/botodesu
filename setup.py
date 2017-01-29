@@ -31,8 +31,8 @@ import sys
 import importlib
 import os
 
-if not sys.version_info[:3] >= (3, 6, 0):
-    raise RuntimeError("Botodesu requires Python 3.6.0 or higher.")
+if not sys.version_info[:3] >= (3, 5, 2):
+    raise RuntimeError("Botodesu requires Python 3.5.2 or higher.")
 
 
 def load_version() -> str:
