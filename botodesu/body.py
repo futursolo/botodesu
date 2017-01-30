@@ -21,6 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"""
+Request Body Generation.
+"""
+
 from typing import Union, Any, Tuple, AnyStr, Dict
 
 import aiohttp  # type: ignore
@@ -31,6 +35,14 @@ __all__ = ["BotoFairu"]
 
 
 class BotoFairu:
+    """
+    Helper class for file uploading.
+
+    The content type will be guessd by `mimetypes` depending on the file name.
+    The default content transfer encoding is binary.
+
+    These options can be overriden by using the methods below.
+    """
     def __init__(self, filename: str, content: bytes) -> None:
         self._filename = filename
         self._content = content
@@ -39,9 +51,15 @@ class BotoFairu:
         self._content_transfer_encoding = "binary"
 
     def set_content_type(self, content_type: str) -> None:
+        """
+        Override the content type guessd by `mimetypes`.
+        """
         self._content_type = content_type
 
     def set_content_transfer_encoding(self, new_cte: str) -> None:
+        """
+        Override the default content transfer encoding.
+        """
         self._content_transfer_encoding = new_cte
 
 

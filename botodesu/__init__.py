@@ -57,6 +57,18 @@ _USER_AGENT = "aiohttp/{} botodesu/{}".format(aiohttp.__version__, version)
 class Boto:
     """
     Bo-to Desu!
+
+    This is an automatically expand class.
+
+    This class will expand its methods automatically.
+
+    After using, the caller of this class should await its `_close` method or
+    wrap it under an `async with` statement to perform automatic clean up when
+    leaving the context.
+
+    The long pulling method of getting updates is support through `async for`.
+
+    See the example in the documentation.
     """
     def __init__(
         self, token: str, *, base_url: str=_DEFAULT_BASE_URL,
@@ -159,6 +171,9 @@ class Boto:
         return update
 
     async def _close(self) -> None:
+        """
+        Clean up the Boto.
+        """
         if self._update_offset != 0:
             try:  # Flush out the processed offset with a short poll.
                 await self.get_updates(

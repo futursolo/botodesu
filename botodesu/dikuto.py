@@ -27,6 +27,12 @@ __all__ = ["BotoDikuto"]
 
 
 class BotoDikuto(Dict[str, Any]):
+    """
+    Dictionary with Attribute access.
+
+    .. note::
+       `from` is a keyword in Python, you can use `_from` to access them.
+    """
     def __getitem__(self, name_or_index: str) -> Any:
         try:
             value = dict.__getitem__(self, name_or_index)

@@ -27,6 +27,11 @@ __all__ = ["BotoEra", "BotoWarning"]
 
 
 class BotoEra(Exception):
+    """
+    Era(Error) occurred inside the Botodesu.
+    This gives you the ability to retrieve the response information
+    from the server if available.
+    """
     def __init__(
         self, *args: Any, status_code: Optional[int]=None,
         content: Optional[Union[Dict[str, Any], List[Any], AnyStr]]=None,
@@ -38,4 +43,7 @@ class BotoEra(Exception):
 
 
 class BotoWarning(Warning):
+    """
+    The Warning of Botodesu.
+    """
     pass

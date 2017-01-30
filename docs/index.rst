@@ -21,11 +21,25 @@ because Botodesu has no knowledge of the telegram api in advanced.
 
 Also, to be comply with the PEP8, Botodesu will automatically remove all the
 underscores for the api methods.
-Please be advised that the Telegram API methods are **case-insensitive**.
+
+.. note:: The Telegram API methods are **case-insensitive**.
+
+.. tip:: the content of the response of Botodesu can be accessed as
+   attributes if no conflict methods can be found in the dict class.
+
+.. important::
+   Absolutely, the expansion is not unlimited. However, this would work for a
+   relative long period until the telegram API makes significant breaking changes
+   (e.g.:add a version number to the request URL).
+
+Uploading Files
+---------------
+You can uploading files by including files as `botodesu.BotoFairu`, the request
+will automatically turn into a `multipart/form-data` request.
 
 Contribution
 ------------
-Botodesu is an early project. All kinds of contributions is warmly welcomed.
+Botodesu is an early project. All kinds of contributions are warmly welcomed.
 
 The source code is hosted on `GitHub <https://github.com/futursolo/botodesu>`_.
 
