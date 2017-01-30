@@ -62,7 +62,7 @@ if __name__ == "__main__":
         author="Kaede Hoshikawa",
         author_email="futursolo@icloud.com",
         url="https://github.com/futursolo/botodesu",
-        license="Apache License 2.0",
+        license="MIT",
         description=("An automatically expanding Telegram bot API that "
                      "supports the latest Telegram features."),
         long_description=open("README.rst", "r").read(),
@@ -75,7 +75,6 @@ if __name__ == "__main__":
             "all": all_requires
         },
         classifiers=[
-            "License :: OSI Approved :: Apache Software License",
             "Operating System :: MacOS",
             "Operating System :: MacOS :: MacOS X",
             "Operating System :: Microsoft",
