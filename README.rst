@@ -2,6 +2,10 @@
 =======================
 An automatically expanding Telegram bot API that supports the latest Telegram features.
 
+Documentation
+-------------
+The documentation of Botodesu is on `Read the docs <https://botodesu.readthedocs.io>`_.
+
 Example
 -------
 An Echo Bot:

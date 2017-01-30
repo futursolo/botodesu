@@ -7,6 +7,28 @@
 =========================
 An automatically expanding Telegram bot API that supports the latest Telegram features.
 
+Getting Started
+---------------
+Wait, what? automatically expanding? How does it work?
+
+Unlike the other libraries, the api methods is not pre-defined in this library,
+they are defined on the first invocation of the method.
+The arguments during the invocation become the corresponding fields in the
+form-data which will be encoded into json or urlencoded or multipart
+and be submitted with a POST request to the telegram server. Thus,
+all the arguments provided when invoking the api methods should be keyword arguments,
+because Botodesu has no knowledge of the telegram api in advanced.
+
+Also, to be comply with the PEP8, Botodesu will automatically remove all the
+underscores for the api methods.
+Please be advised that the Telegram API methods are **case-insensitive**.
+
+Contribution
+------------
+Botodesu is an early project. All kinds of contributions is warmly welcomed.
+
+The source code is hosted on `GitHub <https://github.com/futursolo/botodesu>`_.
+
 Example
 -------
 An Echo Bot:
