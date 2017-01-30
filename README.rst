@@ -38,7 +38,7 @@ Try it out!
 -----------
 .. code-block:: shell
 
-  $ pip install git+https://github.com/futursolo/botodesu.git
+  $ pip install -U botodesu
 
 License
 -------
