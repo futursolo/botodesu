@@ -11,20 +11,20 @@ Getting Started
 ---------------
 Wait, what? automatically expanding? How does it work?
 
-Unlike the other libraries, the api methods is not pre-defined in this library,
+Unlike the other libraries, the api methods are not pre-defined in this library,
 they are defined on the first invocation of the method.
 The arguments during the invocation become the corresponding fields in the
-form-data which will be encoded into json or urlencoded or multipart
+form-data which will then be encoded into json or urlencoded or multipart
 and be submitted with a POST request to the telegram server. Thus,
 all the arguments provided when invoking the api methods should be keyword arguments,
-because Botodesu has no knowledge of the telegram api in advanced.
+because Botodesu has no knowledge of the Telegram API in advanced.
 
 Also, to be comply with the PEP8, Botodesu will automatically remove all the
 underscores for the api methods.
 
 .. note:: The Telegram API methods are **case-insensitive**.
 
-.. tip:: the content of the response of Botodesu can be accessed as
+.. tip:: The content of the response of Botodesu can be accessed as
    attributes if no conflict methods can be found in the dict class.
 
 .. important::
