@@ -38,7 +38,7 @@ from . import body
 from .body import *
 
 import asyncio
-import aiohttp  # type: ignore
+import aiohttp
 import re
 import json
 import functools
@@ -148,7 +148,10 @@ class Boto:
 
                 self._pending_updates.extend(updates)
 
-            except:
+            except asyncio.CancelledError:
+                raise
+
+            except Exception:
                 await asyncio.sleep((random.random() * 5 + 5))
                 # Wait a peroid (between 5 and 10 sec) of time
                 # before retrying.
@@ -181,13 +184,18 @@ class Boto:
                     offset=self._update_offset,
                     timeout=0)
 
-            except:  # Failed to short poll.
+            except asyncio.CancelledError:
+                raise
+
+            except Exception:  # Failed to short poll.
                 warnings.warn(
                     ("Boto cannot upload the offset to the telegram server,"
                      "the same update may be processed twice "
                      "on the next start, the actual offset is {}.\n{}").format(
                         self._update_offset, traceback.format_exc()),
                     BotoWarning)
+
+                raise
 
         await self._client.close()
         self._client = None

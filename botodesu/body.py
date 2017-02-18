@@ -27,7 +27,7 @@ Request Body Generation.
 
 from typing import Union, Any, Tuple, AnyStr, Dict
 
-import aiohttp  # type: ignore
+import aiohttp
 import mimetypes
 import json
 
